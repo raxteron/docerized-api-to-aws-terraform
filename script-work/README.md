@@ -13,6 +13,34 @@ This project uses **Terraform** to deploy Docker image : `nmatsui/hello-world-ap
 
 ---
 
+## 🧪 Script Automation (script-work/)
+
+### Please read the script before executing it.
+### It's not wise to execute something that you are not sure of.
+
+The `script-work/` directory is a fully automated variant of this project, designed to streamline Terraform provisioning and validation via Bash scripting.
+
+### 🔧 What's Included
+
+- `deploy_and_test.sh`: Interactive Bash script that:
+   - Validates your Terraform and AWS CLI setup
+   - Lets you confirm or update your backend S3 bucket
+   - Displays current Terraform variables from `variables.tf`
+   - Prompts for confirmation before running `terraform init`, `plan`, and `apply`
+   - Outputs the public Load Balancer DNS and automatically tests the endpoint with `curl`
+   - Includes "magic word" entry challenge for awareness and security
+
+### 🚀 How to Run
+
+```bash
+cd script-work
+chmod +x deploy_and_test.sh
+./deploy_and_test.sh
+```
+
+
+---
+
 ## 📐 Application Architecture Overview
 
 - **VPC** with public subnets in 2 availability zones
@@ -33,7 +61,7 @@ This project uses **Terraform** to deploy Docker image : `nmatsui/hello-world-ap
 
 ### 📁 Folder Structure
 
-```hcl
+```
 ├── main.tf               # Root module, wires all submodules
 ├── variables.tf          # Global variables (image, port, replicas, etc.)
 ├── backend.tf            # Terraform S3 backend configuration

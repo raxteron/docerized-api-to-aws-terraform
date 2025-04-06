@@ -4,6 +4,7 @@
 terraform.tfstate
 terraform.tfstate.*
 *.tf.bak
+tfplan
 
 # IDEs and OS
 .DS_Store

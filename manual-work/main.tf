@@ -1,5 +1,5 @@
 module "networking" {
-  source = "networking"
+  source = "./networking"
 
   app_name             = var.app_name
   container_port       = var.container_port
@@ -9,7 +9,7 @@ module "networking" {
 }
 
 module "alb" {
-  source         = "alb"
+  source         = "./alb"
   app_name       = var.app_name
   container_port = var.container_port
   vpc_id         = module.networking.vpc_id
@@ -18,7 +18,7 @@ module "alb" {
 }
 
 module "ecs" {
-  source     = "ecs"
+  source     = "./ecs"
   depends_on = [module.alb]
 
   app_name             = var.app_name
