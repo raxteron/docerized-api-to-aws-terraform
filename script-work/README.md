@@ -2,7 +2,7 @@
 
 This project uses **Terraform** to deploy Docker image : `nmatsui/hello-world-api` to AWS.
 
-## Please verify the ***variables.tf*** file before execution!
+## ⚠️ Please verify the ***variables.tf*** and ***backend.tf*** files before execution! ⚠️
 
 ---
 
