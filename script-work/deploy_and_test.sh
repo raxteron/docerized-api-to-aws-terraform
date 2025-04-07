@@ -129,7 +129,30 @@ if [[ -z "$LB_DNS" ]]; then
     exit 1
 fi
 
-echo -e "${GREEN}📡 Curling the deployed endpoint...${NC}"
-curl -i "http://$LB_DNS"
+echo -e "${GREEN}⌛ Waiting for the service to become healthy...${NC}"
+
+MAX_RETRIES=6
+RETRY_DELAY=10
+SUCCESS=false
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo -e "${YELLOW}🔁 Attempt $i: curl http://$LB_DNS${NC}"
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://$LB_DNS")
+
+  if [[ "$HTTP_CODE" == "200" ]]; then
+    echo -e "${GREEN}✅ Service is up and responding with 200 OK!${NC}"
+    curl -i "http://$LB_DNS"
+    SUCCESS=true
+    break
+  else
+    echo -e "${RED}❌ Not ready yet (status: $HTTP_CODE), retrying in $RETRY_DELAY sec...${NC}"
+    sleep $RETRY_DELAY
+  fi
+done
+
+if [[ "$SUCCESS" != true ]]; then
+  echo -e "${RED}⛔ Service did not become healthy after $((MAX_RETRIES * RETRY_DELAY)) seconds.${NC}"
+  exit 1
+fi
 
 #MAGIC WORD: thanks
