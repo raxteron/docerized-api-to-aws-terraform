@@ -37,32 +37,57 @@ aws sts get-caller-identity >/dev/null || { echo -e "${RED}AWS CLI is not authen
 # Handle S3 Bucket from backend.tf
 # ─────────────────────────────────────────────────────
 
-echo -e "${GREEN}🗃️ Checking backend.tf S3 bucket...${NC}"
+echo -e "${GREEN}🗃️ Reading backend.tf for S3 bucket and region...${NC}"
 BUCKET=$(grep "bucket\\s*=\\s*" backend.tf | sed -E "s/.*\"([^\"]+)\".*/\\1/")
-echo -e "${YELLOW}Current bucket: $BUCKET${NC}"
-read -p "✏️  Do you want to change the bucket name? (yes/no): " CHANGE_BUCKET
+REGION=$(grep "region\\s*=\\s*" backend.tf | sed -E "s/.*\"([^\"]+)\".*/\\1/")
 
+echo -e "${YELLOW}Current bucket: ${BUCKET}${NC}"
+echo -e "${YELLOW}Current region: ${REGION}${NC}"
+
+read -p "✏️  Do you want to change the bucket and region? (yes/no): " CHANGE_BUCKET
 if [[ "$CHANGE_BUCKET" == "yes" ]]; then
     read -p "➡️  Enter new bucket name: " NEW_BUCKET
-    if [[ -n "$NEW_BUCKET" ]]; then
+    read -p "➡️  Enter region for the bucket (e.g., eu-central-1): " NEW_REGION
+
+    if [[ -n "$NEW_BUCKET" && -n "$NEW_REGION" ]]; then
         echo -e "${GREEN}🔧 Updating backend.tf...${NC}"
         sed -i.bak -E "s/(bucket\\s*=\\s*\")[^\"]+(\".*)/\\1$NEW_BUCKET\\2/" backend.tf
+        sed -i.bak -E "s/(region\\s*=\\s*\")[^\"]+(\".*)/\\1$NEW_REGION\\2/" backend.tf
         BUCKET="$NEW_BUCKET"
-        echo -e "${GREEN}✅ Bucket updated to: $BUCKET${NC}"
+        REGION="$NEW_REGION"
+        echo -e "${GREEN}✅ Backend bucket and region updated.${NC}"
     else
-        echo -e "${RED}⚠️  No input given. Keeping original bucket.${NC}"
+        echo -e "${RED}⚠️  Incomplete input. Keeping original values.${NC}"
     fi
 fi
 
 echo -e "${GREEN}🔍 Checking access to S3 bucket: $BUCKET...${NC}"
 if ! aws s3 ls "s3://$BUCKET" &> /dev/null; then
-    echo -e "${RED}❌ Cannot access bucket: $BUCKET${NC}"
-    exit 1
+    echo -e "${YELLOW}⚠️  Bucket does not exist or is not accessible: $BUCKET${NC}"
+    read -p "➕ Do you want to create this bucket? (yes/no): " CREATE_BUCKET
+
+    if [[ "$CREATE_BUCKET" == "yes" ]]; then
+        REGION=$(grep "region\\s*=\\s*" backend.tf | sed -E "s/.*\"([^\"]+)\".*/\\1/")
+        echo -e "${GREEN}📦 Creating bucket in region: $REGION...${NC}"
+
+        if [[ "$REGION" == "us-east-1" ]]; then
+            aws s3api create-bucket --bucket "$BUCKET" --region "$REGION"
+        else
+            aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" --create-bucket-configuration LocationConstraint="$REGION"
+        fi
+
+        echo -e "${GREEN}✅ Bucket $BUCKET created.${NC}"
+    else
+        echo -e "${RED}⛔ Cannot continue without S3 bucket access.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✅ Bucket exists and is accessible.${NC}"
 fi
 
 
 # ─────────────────────────────────────────────────────
-# Parse variables.tf and prompt for changes
+# Parse variables.tf and confirm variables
 # ─────────────────────────────────────────────────────
 
 echo -e "${GREEN}📄 Reading current variables from variables.tf...${NC}"
@@ -131,7 +156,7 @@ fi
 
 echo -e "${GREEN}⌛ Waiting for the service to become healthy...${NC}"
 
-MAX_RETRIES=6
+MAX_RETRIES=10
 RETRY_DELAY=10
 SUCCESS=false
 
