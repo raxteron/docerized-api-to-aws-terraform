@@ -67,6 +67,52 @@ Each module accepts input variables from the variables.tf from the root director
 
 ---
 
+## 🛠️ AWS Setup Prerequisites
+
+Before running `terraform init`, ensure the following:
+
+### ✅ AWS CLI is configured
+
+Run:
+
+```bash
+aws configure
+```
+
+Make sure you have valid AWS credentials and a default region set. You can test AWS access with : 
+
+```bash
+aws sts get-caller-identity
+```
+
+---
+
+### ✅ S3 Backend Bucket Exists
+
+Terraform stores its remote state in an S3 bucket (see `backend.tf`).  
+Make sure the bucket defined there **already exists**, and is located in the correct region.
+
+You can check and create the bucket with:
+
+```bash
+aws s3api create-bucket \
+  --bucket your-bucket-name \
+  --region your-region \
+  --create-bucket-configuration LocationConstraint=your-region
+```
+
+> ⚠️ **Special case**: If your region is `us-east-1`, do **not** pass the `--create-bucket-configuration` flag:
+```bash
+aws s3api create-bucket \
+  --bucket your-bucket-name \
+  --region us-east-1
+```
+
+> ℹ️ The region and bucket name must match what’s defined in `backend.tf`.
+
+
+---
+
 ## 🚀 How to Deploy
 
 1. **Initialize Terraform**
